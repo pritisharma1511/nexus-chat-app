@@ -1,0 +1,37 @@
+services:
+  # Web Service: Node.js + Express + Socket.IO Backend & Frontend
+  - type: web
+    name: nexus-chat-app
+    runtime: docker
+    dockerfilePath: server/Dockerfile
+    dockerContext: server
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: REDIS_HOST
+        fromRedis:
+          name: nexus-chat-redis
+          property: host
+      - key: REDIS_PORT
+        fromRedis:
+          name: nexus-chat-redis
+          property: port
+      - key: REDIS_PASSWORD
+        fromRedis:
+          name: nexus-chat-redis
+          property: password
+
+  # Database: Render Managed Redis (Password-protected, private network)
+  - type: redis
+    name: nexus-chat-redis
+    region: oregon
+    plan: free
+    maxmemoryPolicy: noeviction
+    ipAllowList: [] # Internal network only for maximum security

@@ -1,0 +1,57 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: chat-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    networks:
+      - chat-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    # Internal only, no published host ports for strict security
+
+  app:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+    networks:
+      - chat-net
+    deploy:
+      replicas: 3
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: chat-nginx
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    networks:
+      - chat-net
+    restart: unless-stopped
+
+networks:
+  chat-net:
+    driver: bridge
+
+volumes:
+  redis-data:
