@@ -1,5 +1,5 @@
 services:
-  # Web Service: Node.js + Express + Socket.IO Backend & Frontend
+  # Web Service running Node.js + Express + Socket.IO
   - type: web
     name: nexus-chat-app
     runtime: docker
@@ -15,23 +15,16 @@ services:
         value: production
       - key: JWT_SECRET
         generateValue: true
-      - key: REDIS_HOST
-        fromRedis:
+      - key: REDIS_URL
+        fromService:
+          type: redis
           name: nexus-chat-redis
-          property: host
-      - key: REDIS_PORT
-        fromRedis:
-          name: nexus-chat-redis
-          property: port
-      - key: REDIS_PASSWORD
-        fromRedis:
-          name: nexus-chat-redis
-          property: password
+          property: connectionString
 
-  # Database: Render Managed Redis (Password-protected, private network)
+  # Redis Managed Instance
   - type: redis
     name: nexus-chat-redis
     region: oregon
     plan: free
     maxmemoryPolicy: noeviction
-    ipAllowList: [] # Internal network only for maximum security
+    ipAllowList: []

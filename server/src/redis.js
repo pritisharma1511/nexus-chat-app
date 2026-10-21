@@ -3,15 +3,24 @@ const config = require('./config');
 const logger = require('./utils/logger');
 
 function buildRedisOptions() {
+  const reconnectStrategy = (retries) => {
+    const delay = Math.min(retries * 200, 3000);
+    logger.warn(`Redis reconnecting attempt ${retries}... retry in ${delay}ms`);
+    return delay;
+  };
+
+  if (config.redisUrl) {
+    return {
+      url: config.redisUrl,
+      socket: { reconnectStrategy }
+    };
+  }
+
   const options = {
     socket: {
       host: config.redis.host,
       port: config.redis.port,
-      reconnectStrategy: (retries) => {
-        const delay = Math.min(retries * 200, 3000);
-        logger.warn(`Redis reconnecting attempt ${retries}... retry in ${delay}ms`);
-        return delay;
-      }
+      reconnectStrategy
     }
   };
 
